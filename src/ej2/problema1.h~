@@ -1,0 +1,10 @@
+
+
+
+
+
+
+#ifndef NAT
+#define NAT
+typedef unsigned int Nat;
+#endif

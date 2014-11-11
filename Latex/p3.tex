@@ -1,0 +1,388 @@
+\subsection{Descripción del Problema}
+
+La \textit{Matrix} es un tablero de $n$ filas por $n$ columnas, por lo que contiene $n^2$ casilleros.
+En cada casillero se encuentra un propulsor con una determinada potencia $p$, el cual puede usarse para moverse de manera vertical u horizontal $p$ 
+casilleros. 
+
+Además cada jugador comienza con una cantidad $k$ de unidades de potencia extra que puede usar en cualquier salto, es decir, puede
+ usar en un casillero de potencia $p'$ una cantidad $i$ de sus unidades de potencia extra para saltar $p'+i$ casilleros, pero esto implica que 
+ le restan $k-i$ unidades de potencia extra para usar en el resto del juego. Si bien puede no usar todas sus unidades de potencia extra, 
+ conservarlas no le reporta ningún beneficio.
+ 
+El juego comienza en un punto $X$, indicado como entrada del problema, perteneciente al tablero, y consiste en encontrar un camino que 
+utilice la menor cantidad de saltos posibles para llegar a otro punto $Y$, también dado por entrada.
+
+
+\subsubsection{Ejemplos}
+
+Mostramos los siguientes ejemplos. Los detallamos en gráficos para mayor legibilidad. Los archivos usados para correr los tests se adjuntan con el código. 
+
+Las unidades de potencia de cada casillero aparecen detalladas en el gráfico. La solución, es decir, uno de los posibles caminos mínimos 
+en la cantidad de saltos, aparece como líneas curvas entre casilleros. Las líneas punteadas marcan a partir de qué momento, en el salto, se usan unidades de potencia extra, si se usan.
+Los círculos marcan los casilleros donde el jugador estuvo parado, es decir, donde empezó o terminó un salto. La casilla en amarillo marca el punto de inicio
+de juego, y la casilla en naranja el punto de llegada. Las unidades de potencia extra se especifican debajo de cada gráfico.
+
+En ambos casos los caminos son soluciones pues no existen caminos entre los dos puntos que tengan menor cantidad de saltos.
+
+\begin{figure}[H]
+    \includegraphics[width=0.4\textwidth]{epj1}
+  \label{fig:ejemplo}
+  \caption{Ejemplo con 0 unidades de potencia extra.}
+\end{figure}
+
+\begin{figure}[H]
+    \includegraphics[width=0.3\textwidth]{epj2}
+  \label{fig:ejemplo}
+  \caption{Ejemplo con 4 unidades de potencia extra.}
+\end{figure}
+
+\paragraph{Nota:} La validez de estos casos se comprobó a mano.
+
+
+\subsection{Resolución}
+Para resolver este problema, decidimos considerar al tablero y los saltos como un grafo con aristas dirigidas. En el grafo 
+tomamos como vértices cada casillero del tablero y como aristas los posibles saltos de un casillero a otro. Nótese que las aristas son dirigidas,
+pues que podamos ir de un casillero a otro no significa que podamos volver. Como lo que nos importa es la cantidad de saltos, todas las aristas 
+tienen el mismo peso.
+
+Gracias a que el peso de las aristas es siempre el mismo, podemos hacer BFS desde el casillero de inicio
+y al encontrar el casillero de destino devolver el camino encontrado. De esta manera obtenemos uno de los caminos más cortos entre el
+origen y el destino.
+
+
+Luego extendemos este modelo para cuando tenemos potencia extra: lo que hacemos es tomar como vértices de este nuevo grafo $k+1$ 
+conjuntos de nodos que se corresponden con un tablero cada uno. Lo que los diferencia es la cantidad de potencia extra disponible.
+%Si el jugador se encuentra en el nodo de la posición $(1, 1)$ para la potencia extra $2$, entonces está en esa posición y le quedan dos unidades de potencia extra. 
+Necesitamos $k+1$ conjuntos para cubrir todos los valores posibles de potencia extra $k$, $k-1$, ..., 
+$1$, $0$. Las aristas en este caso son los saltos posibles dentro de un nivel de potencia extra determinado, como en el caso anterior, y también
+hacia un nivel de potencia extra 
+inferior. Nótese que estas aristas que agregamos también son dirigidas pues nunca es posible ganar potencia extra haciendo un salto.
+Como nuevamente las aristas representan saltos del jugador, sean potenciados o no, se puede usar BFS para encontrar el camino mínimo hasta el 
+destino.
+% Por ejemplo si de la casilla v se puede llegar a la casilla $w$ usando 3 unidades de potencia extra, 
+% entonces para cada $k > 4$ existirá el eje entre el vértice $v_k$ y $w_k-3$. Estas aristas que agregamos también son dirigidas, 
+% pues nunca es posible ganar potencia extra haciendo un salto.  
+
+
+\subsection{Correctitud}
+
+Para demostrar correctitud tenemos que demostrar cuatro cosas:
+
+\subsubsection{Definición 1: Una arista en G representa un salto en T}
+Vamos a hablar de los nodos como una tupla (Casillero,PotenciaDisponible).
+Por definición en el grafo G una arista $a$=<($o$,$k$),($d$,$k-i$)> representa que en el tablero se puede llegar desde un casillero origen $o$ hasta un casillero destino $d$, utilizando $i$ unidades de potencia extra, y siendo $k$ la potencia disponible antes de hacer el salto, con $i \leq k$. Por como se genera el grafo en nuestro algoritmo, si esa arista existe entonces representa un salto válido en T.
+
+\subsubsection{Lema 1: Descartar saltos que derrochan energía extra es correcto, los saltos que no derrochan no se descartan}
+Notamos que no consideramos como saltos válidos aquellos saltos donde las unidades de potencia extra se usen de manera inútil. 
+A lo que nos referimos con 
+esto es que si el jugador está parado en un casillero P, con p unidades de potencia y le quedan k unidades de potencia extra, y salta a un 
+casillero P' que está a menos de p+1 casilleros de distancia, nuestro algoritmo no usa ninguna unidad de potencia extra. Del mismo modo, si salta
+casillero P' que está a p+i casilleros de distancia, el salto solo usa i unidades de potencia extra, y si i>k, el salto no es válido 
+por el enunciado del problema en sí, por lo que ni siquiera consideramos estos casos. 
+Aunque puede existir una solución óptima en la que se use unidades de potencia extra de esta forma, siempre existe una equivalente 
+en la que no pasa. Es decir, si tenemos un
+camino C entre dos nodos de k saltos, trivialmente podemos recorrer el mismo camino con k saltos sin usar unidades de potencia extra de
+manera inútil.
+
+\subsubsection{Lema 2: Un camino en T es representado en G si no derrocha energía} 
+
+
+Sea C un camino entre el casillero de inicio (Xi,Yi) y un casillero cualquiera (X,Y), válido según las reglas del 
+juego y que no derrocha energía, queremos ver que 
+C pertenece a G, donde G es el grafo que describimos en la resolución. Para esto usaremos inducción en la longitud del camino.
+
+CB1: camino trivial, sin saltos: Por definición, para cada potencia extra k, todo casillero de T esta representado 
+en un vértice de G. asi que como existe el vértice en G entonces existe el camino.
+
+CB2: camino de un salto: sean dos casilleros en T, $o$ y $d$ tal que existe un salto que va de $o$ a $d$. Por Lema 
+1 ese salto esta representado en G, así que existe una arista entre $o$ y $d$, por lo que existe un camino entre $o$ y $d$. 
+
+HI: dado un camino $C$ de longitud n, o sea que realiza n saltos, válido según las reglas del juego, $C$ pertenece a G.
+
+Dado $C' = C'' ++ (i,j)$ donde $C'$ representa un camino en el tablero de $n+1$ saltos, construido por $C''$ un camino 
+de $n$ saltos, $(i,j)$ el
+último casillero del camino $C'$. Queremos ver que en G existe un camino que representa a $C'$.  
+
+
+Por hipótesis inductiva $C''$, un camino valido de n saltos (si no es valido entonces no existe en T), pertenece a G.
+Además sabemos que existe en T un salto entre el último nodo de $C''$, $(i',j')$, e $(i,j)$, pues si no existiese entonces C'
+no seria un camino valido en T. Como es un camino válido, entonces existe este salto en T, luego, por el Lema 1,
+existe en G una arista entre estos dos nodos. Luego, podemos formar $C'$ como la unión de estos caminos, entonces existe C' en G.
+
+ 
+\subsubsection{Lema 3: Usamos BFS de manera correcta}
+
+El código implementado utiliza un BFS para encontrar el camino mínimo entre el punto inicial y el
+punto final. Esto es posible gracias a que las aristas no tienen pesos, así que podemos suponer
+que todos los pesos son iguales. Lo que hacemos es usar la función ObtenerYMarcarPuntosAdyacentes
+(OYMPA) para marcar todos los vecinos de un vértice como ya visitados y agregarlos a la lista de 
+vértices a visitar, también para agregar a cada vértice su predecesor. Esto funciona exactamente 
+igual que un BFS por lo que podemos encontrar el camino mínimo en G y también reconstruirlo correctamente, 
+usando los predecesores del punto final hasta llegar al punto de inicio y devolverlos. Por lema 4, el camino
+devuelto por el BFS se corresponde con un camino mínimo en T.
+
+En la sección de complejidad se puede ver el pseudocódigo de ObtenerYMarcarPuntosAdyacentes.
+
+\subsubsection{Lema 4: Un camino mínimo en G es un camino mínimo en T}
+Por el lema 2 sabemos que en G tenemos todos los caminos que no derrochan energía, y 
+por el lema 1, sabemos que entre estos caminos siempre tenemos soluciones correctas en T. Como
+las aristas representan la cantidad de saltos dados entonces encontrar el camino mínimo en G 
+es equivalente a encontrar un camino mínimo en T.
+
+
+\subsubsection{Conclusión}
+Luego, por lema 3, conseguimos un camino mínimo en G entre los dos puntos. Por lema 4,
+sabemos que este camino se corresponde con un camino mínimo en T.
+Entonces el código devuelve un camino mínimo del juego Saltos en \textit{la Matrix}.
+
+
+
+
+
+
+
+\newpage
+
+\subsection{Complejidad}
+
+Sea $n$ la cantidad de filas y columnas de la Matrix y $k$ la cantidad de unidades extra de potencia inicial.
+
+\subsubsection{Función principal}
+
+\begin{algoritmo}{Resolver}{\In{laMatrix}{Matrix}, \In{potenciaExtra}{Nat}, \In{origen}{Coordenada}, \In{destino}{Coordenada}}[Lista(Par(Coordenada, Potencia))]
+\LinesNumbered
+\nl	LaTablita tabla(laMatrix.Filas(), potenciaExtra)\tcc*{$O$($n^2*k$)}
+	\tcc{Rellenamos la tabla para el caso base.}
+	tabla.Camino[origen.fila-1][origen.columna-1][potenciaExtra].Saltos \asignar 0\tcc*{$O$(1)}
+	\tcc{Llenamos la tabla partiendo desde el punto de origen.}
+	Lista(Par(Coordenada, Potencia)) puntosPorVer\tcc*{$O$(1)}
+	ObtenerYMarcarPuntosAdyacentes(puntosPorVer, tabla, laMatrix, origen, potenciaExtra)\tcc*{$O$($n$)}
+	\tcc{Este ciclo itera como mucho $k$ veces por cada casillero. Entonces itera $n^2*k$ veces en el peor caso.}
+	\While(\tcc*[f]{$O$(1)}){$\neg$puntosPorVer.Vacia()}{
+		Coordenada pos \asignar puntosPorVer.Primero().coordenada\tcc*{$O$(1)}
+		Nat potenciaDisponible \asignar puntosPorVer.Primero().potencia\tcc*{$O$(1)}
+		puntosPorVer.BorrarPrimero()\tcc*{$O$(1)}
+		ObtenerYMarcarPuntosAdyacentes(puntosPorVer, tabla, laMatrix, pos, potenciaDisponible)\tcc*{$O$($n^2*k*n$)}
+	}
+	res \asignar tabla.CaminoMinimo(destino)\tcc*{$O$($n+k$)}
+
+\end{algoritmo}
+
+El constructor de la tabla inicializa todas las posiciones colocando el atributo Saltos en $-1$ para indicar que está indefinido. Como tiene tamaño $n^2*(k+1)$, el costo de inicializarlo es $O$($n^2*k$).
+
+Como se ejecuta ObtenerYMarcarPuntosAdyacentes cuya complejidad es $O$($n$) dentro del ciclo que itera en el orden de $n^2*k$ veces, la complejidad es de $O$($n^3*k$) para el ciclo. El resto de las operaciones tienen un costo que está incluido en $O$($n^3*k$). Más adelante vemos por qué itera no más de $n^2*k$ veces el ciclo.
+
+
+\subsubsection{Función análoga a BFS}
+
+\begin{algoritmo}{ObtenerYMarcarPuntosAdyacentes}{\Inout{puntosPorVer}{Lista(Par(Coordenada, Potencia))}, \Inout{tabla}{LaTablita}, \In{laMatrix}{Matrix}, \In{pos}{Coordenada}, \In{destinoAbsoluto}{Coordenada}, \In{potenciaDisponible}{Nat}}
+\LinesNumbered
+\nl	
+	Int potencia \asignar laMatrix.PotenciaDe(pos)\tcc*{$O$(1)}
+	\tcc{Itera $O$($n$) veces.}
+	\For(\tcc*[f]{$O$(1)}){\Forcond{i \asignar -potencia}{potencia}}{
+		Coordenada posDestino \asignar <pos.Fila+i, pos.Columna>\tcc*{$O$(1)}
+		MarcarYAgregar(puntosPorVer, pos, posDestino, tabla, potenciaDisponible, 0)\tcc*{$O$(1)}
+		Si marqué el destino absoluto, limpio la lista de puntos por ver y retorno a la función que me llamó.\tcc*{$O$(1)}
+		posDestino.Fila \asignar pos.Fila\tcc*{$O$(1)}
+		posDestino.Columna \asignar posDestino.Columna + i\tcc*{$O$(1)}
+		MarcarYAgregar(puntosPorVer, pos, posDestino, tabla, potenciaDisponible, 0)\tcc*{$O$(1)}
+		Si marqué el destino absoluto, limpio la lista de puntos por ver y retorno a la función que me llamó.\tcc*{$O$(1)}
+	}
+	
+	\tcc{Itera $O$($k$) veces.}
+	\For(){\Forcond{potenciaExtra \asignar 1}{potenciaDisponible}} {
+		Nat potenciaTotal \asignar potencia + potenciaExtra\tcc*{$O$(1)}
+		Coordenada posDestino \asignar <pos.Fila-potenciaTotal, pos.Columna>\tcc*{$O$(1)}
+		MarcarYAgregar(puntosPorVer, pos, posDestino, tabla, potenciaDisponible, potenciaExtra)\tcc*{$O$(1)}
+		Si marqué el destino absoluto, limpio la lista de puntos por ver y retorno a la función que me llamó.\tcc*{$O$(1)}
+		
+		posDestino.Fila \asignar posDestino.Fila + 2*potenciaTotal\tcc*{$O$(1)}
+		MarcarYAgregar(puntosPorVer, pos, posDestino, tabla, potenciaDisponible, potenciaExtra)\tcc*{$O$(1)}
+		Si marqué el destino absoluto, limpio la lista de puntos por ver y retorno a la función que me llamó.\tcc*{$O$(1)}
+		
+		posDestino.Fila \asignar pos.Fila\tcc*{$O$(1)}
+		posDestino.Columna \asignar posDestino.Columna - potenciaTotal\tcc*{$O$(1)}
+		MarcarYAgregar(puntosPorVer, pos, posDestino, tabla, potenciaDisponible, potenciaExtra)\tcc*{$O$(1)}
+		Si marqué el destino absoluto, limpio la lista de puntos por ver y retorno a la función que me llamó.\tcc*{$O$(1)}
+		
+		posDestino.Columna \asignar posDestino.Columna + 2*potenciaTotal\tcc*{$O$(1)}
+		MarcarYAgregar(puntosPorVer, pos, posDestino, tabla, potenciaDisponible, potenciaExtra)\tcc*{$O$(1)}
+		Si marqué el destino absoluto, limpio la lista de puntos por ver y retorno a la función que me llamó.\tcc*{$O$(1)}
+	}
+\end{algoritmo}
+
+Limpiar la lista puntosPorVer puede costar $O$($n^2*k$) en el peor caso pero hacerlo implica la terminación del ciclo de la función principal, con lo cual no afecta su complejidad. Por razones que explicaremos más adelante esta función tiene costo $O$($n$) en el peor caso.
+
+
+\subsubsection{Función de marcado de vértices}
+
+\begin{algoritmo}{MarcarYAgregar}{\Inout{puntosPorVer}{Lista(Par(Coordenada, Potencia))}, \In{pos}{Coordenada}, \In{posDestino}{Coordenada}, \Inout{tabla}{LaTablita}, \In{potenciaDisponible}{Nat}, \In{potenciaExtra}{Nat}}
+\LinesNumbered
+\nl	
+	\If(\tcc*[f]{$O$(1)}) {$\neg$laMatrix.EsCoordenadaValida(posDestino)} {
+		\return\tcc*{$O$(1)}
+	}
+	CaminoMin origen \asignar tabla.distancia[posOrigen.Fila-1][posOrigen.Columna-1][potenciaDisponible]\tcc*{$O$(1)}
+	CaminoMin destino \asignar tabla.distancia[posDestino.Fila-1][posDestino.Columna-1][potenciaDisponible-potenciaExtra]\tcc*{$O$(1)}
+	\If(\tcc*[f]{$O$(1)}) {destino.Saltos == -1}{
+		lista.AgregarAtras(<posDestino, potenciaDisponible-potenciaExtra>)\tcc*{$O$(1)}
+	}
+	\If(\tcc*[f]{$O$(1)}) {destino.Saltos == -1 $\lor$ destino.Saltos > origen.Saltos+1} {
+		destino.Saltos = origen.Saltos+1\tcc*{$O$(1)}
+		destino.CasilleroAnterior = posOrigen\tcc*{$O$(1)}
+		destino.potenciaUsada = potenciaExtra\tcc*{$O$(1)}
+	}
+\end{algoritmo}
+
+En MarcarYAgregar se retorna de inmediato si la coordenada para marcar es inválida. Por esto, se puede acotar el costo del segundo ciclo de ObtenerYMarcarPuntosAdyacentes al costo de las, como mucho, $2n-2$ llamadas que tienen coordenadas válidas. 
+Esto es porque en el peor caso la potencia del casillero es $1$ lo que implica que el ciclo abarca todos los saltos del origen a los casilleros en la misma fila y todos los saltos del origen a los casilleros en la misma columna quitando los dos que son adyacentes al estar en una esquina del tablero. 
+Si no estuviera en una esquina del tablero, tendría tres o cuatro casilleros adyacentes que nunca miraría, reduciendo el costo total del ciclo. Entonces el costo del ciclo en peor caso es $O$($min(n, k)$). Finalmente esto hace que la complejidad de ObtenerYMarcarPuntosAdyacentes sea del orden $O$($n+min(n, k)$) que está incluido en $O$($n$).
+
+Se puede ver además en el pseudocódigo de MarcarYAgregar que si un nodo ya fue marcado (Saltos no vale $-1$) no se agrega a la lista de puntos por ver. Esto implica que la función principal nunca puede recorrer más que la cantidad total de nodos del grafo. La cual es $n^2*k$. Por lo tanto itera, esa cantidad de veces en el peor caso.
+
+\subsubsection{Función de reconstrucción del camino}
+
+\begin{algoritmo}{CaminoMinimo}{\In{tabla}{LaTablita}, \In{pos}{Coordenada}}[Lista(Par(Coordenada, Potencia))] {
+	CaminoMin este\tcc*{$O$(1)}
+	Nat potenciaFinal \asignar 0\tcc*{$O$(1)}
+	\tcc{Itera $k+1$ veces en el peor caso.}
+	\For(\tcc*[f]{$O$(1)}) {\Forcond{k \asignar 0}{tabla.potenciaMaxima}} {
+		vector<CaminoMin> caminos \asignar tabla.distancia[pos.first-1][pos.second-1]\tcc*{$O$(1)}
+		\If(\tcc*[f]{$O$(1)}) {caminos[k].Saltos $\neq$ -1} {
+			este \asignar caminos[k]\tcc*{$O$(1)}
+			potenciaFinal \asignar k\tcc*{$O$(1)}
+			\Break\tcc*{$O$(1)}
+		}
+	}
+	CoordenadaYPotencia paso\tcc*{$O$(1)}
+	paso.Posicion \asignar pos\tcc*{$O$(1)}
+	paso.Potencia \asignar este.potenciaUsada\tcc*{$O$(1)}
+	\tcc{Itera $2n$ veces en el peor caso.}
+	\While(\tcc*[f]{$O$(1)}) {este.Saltos > 0} {
+		res.AgregarAdelante(paso)\tcc*{$O$(1)}
+		potenciaFinal \asignar potenciaFinal + este.potenciaUsada\tcc*{$O$(1)}
+		Coordenada anterior \asignar este.CasilleroAnterior\tcc*{$O$(1)}
+		este \asignar tabla.distancia[anterior.first-1][anterior.second-1][potenciaFinal]\tcc*{$O$(1)}
+		paso.Posicion \asignar anterior\tcc*{$O$(1)}
+		paso.Potencia \asignar este.potenciaUsada\tcc*{$O$(1)}
+	}
+}
+\end{algoritmo}
+Vale aclarar que el segundo ciclo no puede iterar más de $2n$ veces porque no existe un camino mínimo entre el origen y el destino que puedan tomar más de $2n$ saltos siendo $n$ la cantidad de filas y columnas de la matrix. Esto es porque todo casillero tiene por lo menos una unidad de potencia en el resorte.
+Sumando los órdenes de complejidad de peor caso para ambos ciclos da $O$($n+k$). Como esto está incluido en $O$($n*k$), no afecta a la complejidad de la función principal.
+
+
+\subsubsection{Conclusión}
+
+La complejidad de peor caso del algoritmo implementado es $O$($n^3*k$) por lo anteriormente expuesto.
+
+
+
+\subsection{Testing}
+
+Para testear correctitud usamos los siguientes ejemplos. Los detallamos en gráficos para mayor legibilidad. Los archivos usados para correr los tests se adjuntan con el código.
+
+Las unidades de potencia de cada casillero aparecen detalladas en el gráfico. La solución, es decir, uno de los posibles caminos mínimos 
+en la cantidad de saltos, aparece como líneas curvas entre casilleros. Las líneas punteadas marcan a partir de qué momento, en el salto, se usan unidades de potencia extra, si se usan.
+Los círculos marcan los casilleros donde el jugador estuvo parado, es decir, donde empezó o terminó un salto. La casilla en amarillo marca el punto de inicio
+de juego, y la casilla en naranja el punto de llegada. Las unidades de potencia extra se especifican debajo de cada gráfico.
+
+En todos los casos la correctitud de las soluciones fue corroborada a mano.
+
+\subsubsection{Test: No salta en diagonal}
+\begin{figure}[H]
+    \includegraphics[width=0.8\textwidth]{ept1}
+  \label{fig:ejemplo}
+  \caption{Test con 0 unidades de potencia extra.}
+\end{figure}
+
+\subsubsection{Test: Tiene sentido común}
+Lo que queremos comprobar con este test es que el algoritmo no usa \textit{golosamente} las unidades de potencia extra, sino que las usa apropiadamente para minimizar la cantidad de saltos.
+\begin{figure}[H]
+    \includegraphics[width=0.8\textwidth]{ept2}
+  \label{fig:ejemplo}
+  \caption{Test con 10 unidades de potencia extra.}
+\end{figure}
+
+\subsubsection{Test: Caso borde}
+Queremos comprobar que el algoritmo puede devolver una solución óptima si todos los elementos son iguales.
+\begin{figure}[H]
+    \includegraphics[width=0.3\textwidth]{ept3}
+  \label{fig:ejemplo}
+  \caption{Test con 0 unidades de potencia extra.}
+\end{figure}
+
+\subsubsection{Test: Retrocede si es la mejor elección}
+\begin{figure}[H]
+    \includegraphics[width=0.8\textwidth]{ept4}
+  \label{fig:ejemplo}
+  \caption{Test con 0 unidades de potencia extra.}
+\end{figure}
+
+\subsubsection{Test: Caso borde}
+Queremos comprobar que el algoritmo puede devolver una solución óptima si no tiene que hacer nada.
+\begin{figure}[H]
+    \includegraphics[width=0.1\textwidth]{ept5}
+  \label{fig:ejemplo}
+  \caption{Test con 0 unidades de potencia extra.}
+\end{figure}
+
+\subsection{Experimentación}
+
+En la experimentación utilizamos dos generadores de instancias distintos. Uno utiliza valores pseudoaleatorios para rellenar los valores de potencia de los casilleros, la potencia extra y las coordenadas de partida y llegada. Todos los valores de potencia están acotados por los parámetros de entrada del generador.
+
+El otro es un generador de valores constantes. Fija como punto de partida la esquina superior izquierda (cuya coordenada es ($1$,$1$)) y de llegada, la esquina inferior derecha (cuya coordenada es ($n$,$n$)). Además utiliza los parámetros de entrada para definir la de todos los casilleros y la potencia extra de la instancia, en lugar de usarlo como cota superior.
+
+Ambos generadores utilizan un único valor de $n$ para las instancias generadas. Esto significa que en un archivo tenemos las instancias para un cierto valor de $n$. Para medir el tiempo de ejecución utilizamos un script de shell de linux que ejecuta una instancia del programa con cada archivo generado. Vale notar entonces que el programa termina completamente al finalizar con las instancias de cierto valor de $n$.
+
+\subsubsection{Instancias aleatorias}
+Utilizando un script de shell de linux, generamos $100$ instancias para cada valor de $n$ múltiplo de $10$ entre $10$ y $350$. El script usado en este caso fue \textbf{generar\_tests.sh}. Para generar instancias aleatorias utilizó el generador pseudoaleatorio descripto anteriormente. Este script toma dos parámetros de entrada y opcionalmente un tercer parámetro. Los primeros dos definen el $n$ más chico y el más grande respectivamente para el cual generar instancias. El parámetro opcional determina el incremento con el cual se recorre el conjunto de números entre el mínimo y máximo. Para esta serie de instancias utilizamos el valor por defecto, $10$.
+
+Además internamente define la cota de potencia de los casilleros y la potencia extra como un cociente entre $n$ y un valor constante. Decidimos que este valor sea $3$. La idea de acotar la potencia es evitar la abundancia de tableros donde hay tanta potencia en los casilleros y en las reservas del jugador que existe un camino de uno o dos saltos al destino sea cual sea el origen. Al ser la cota $n/3$ sólo van a existir tableros que se resuelven en uno o dos saltos si el destino ya se encontraba lo suficientemente cerca del origen.
+
+\subsubsection{Instancias Difíciles}
+Utilizando un script similar al anterior, generamos $100$ instancias para cada valor de $n$ múltiplo de $10$ entre $10$ y $350$. Sin embargo por el gran costo computacional sólo pudimos resolver y medir instancias de este tipo hasta $n=180$. El script en este caso utilizó el generador de valores constantes. Cabe destacar que las cien instancias generadas son todas idénticas para cada valor de $n$ distinto.
+
+El valor de potencia para estas instancias fue $n/3$. Esto significa que el jugador dispone de $n/3$ unidades de potencia extra y todo casillero tiene $n/3$ unidades de potencia para su resorte. La idea de usar el mismo valor que la cota de la serie aleatoria es poder comparar y ver cuán difíciles son estas instancias contra las generadas aleatoriamente.
+
+\subsubsection{Instancias Fáciles sin potencia extra}
+Utilizando un script similar a los anteriores, generamos $100$ instancias para cada valor de $n$ múltiplo de $10$ entre $10$ y $350$. Nuevamente usamos el generador de valores constantes. En este caso la potencia de los casilleros es $n$ y la potencia extra, $0$. La idea de esta serie es comparar la dificultad de estas instancias con las aleatorias.
+
+\subsubsection{Instancias Fáciles con potencia extra}
+Utilizando un script similar a los anteriores, generamos $100$ instancias para cada valor de $n$ múltiplo de $10$ entre $10$ y $350$. Nuevamente usamos el generador de valores constantes. En este caso la potencia de los casilleros es $1$ y la potencia extra, $2n$. La idea de esta serie es comparar la dificultad de estas instancias con las aleatorias.
+
+\subsubsection{Gráficos}
+
+Como sólo pudimos medir tests difíciles hasta $n=180$, filtramos las mediciones de los tests aleatorios hasta ese $n$ también. Los tests fáciles con potencia extra sufrieron un corte similar, en lugar de $n=180$, los cortamos en $n=130$ porque el factor $k$ es $2n$ en ellos.
+
+\includegraphics[width=\textwidth]{Grafico1.jpg}
+
+\includegraphics[width=\textwidth]{Grafico2.jpg}
+
+\includegraphics[width=\textwidth]{Grafico3.jpg}
+
+\subsubsection{Conclusiones}
+
+Como se puede ver en el segundo y tercer gráfico, los tests difíciles no son los de caso peor, pero aún así se disponen en una constante.
+Hay \textit{outliers} para cada tanda de instancias, que son más notorios para $n^3*k$ chicos. Estos surgen por ser las primeras mediciones de una instancia del programa. Como está obteniendo las variables en memoria por primera vez, hay valores que faltan en la memoria cache del procesador. Posteriormente desaparecen del gráfico los \textit{outliers} porque es un costo constante.
+
+
+
+\subsection{Desarrollo de los ejercicios adicionales}
+
+\begin{enumerate} 
+\item El algoritmo de creación de la matriz permanecería prácticamente igual, las aristas ahora tienen peso $d*c(r)$, donde $c(r)$ es el costo asociado
+a cada resorte, y $d$ es la distancia a saltar. Sin embargo, si utilizamos unidades de potencia para realizar los saltos, esto es modelado con otro conjunto de aristas,
+las cuales tienen peso $(d-i)*c(r)$, con $1 \leq i \leq k$. Esto representa el hecho de saltar utilizando $1,2,...,k$ unidades de potencia.
+Una gran diferencia con el algoritmo anterior es que si un salto se podía hacer sin gastar potencia extra entonces no nos interesaba el mismo salto gastando potencia extra.
+Esto significa que al generar las aristas por cada vértice tenemos, siendo $n$ la cantidad de vértices, en el peor caso $2n*k$ aristas, donde antes teníamos $2n$ aristas. (Nos podría interesar gastar $k$ en vez de dinero pues lo que estamos minimizando es el dinero gastado). 
+Entonces, ahora nuestro modelo tiene aristas de peso positivo, con pesos no necesariamente iguales. Por lo tanto, para resolver el problema, utilizamos el 
+algoritmo de Dijkstra, ya que se cumple que el grafo no tiene pesos negativos, y al ser los pesos distintos, no podemos utilizar algoritmos más eficientes como BFS.
+
+
+\item La complejidad del algoritmo se divide en dos partes: crear el grafo con las características mencionadas, y aplicarle al grafo el algoritmo de Dijkstra. La construcción de este nuevo grafo varía su complejidad respecto del problema original debido a que ponerle peso a las aristas es $O(1)$, pero la cantidad de aristas por cada vértice se multiplica por $k$. %COMENTARIO: VER SI SE DUPLICAN LAS ARISTAS.
+Luego, aplicar el algoritmo de Dijkstra cuesta $O(m*log(n))$, siendo $m$ la cantidad de aristas. Como el grafo tiene un tamaño de $n^2*k$, y cada vértice se puede conectar con $2n*k$ otros vértices en el peor caso
+entonces $m = (2n*k)*(n^2*k)$. Luego Dijkstra cuesta $O(n^3*k^2*log(n^2*k))$.
+La complejidad de utilizar Dijkstra es mayor que la de crear el grafo, por lo tanto la complejidad final sería $O(n^3*k^2*log(n^3*k^2))$.
+\end{enumerate} 

@@ -1,0 +1,491 @@
+\subsection{Descripción del Problema}
+Dada una secuencia de cartas finita de tamaño n. El juego consiste en tomar una subsecuencia, de la original, de cartas iniciada en 
+el principio o final de la original. Y luego proceder, el otro jugador, 
+de la misma manera con las cartas que queden en la mesa. Notamos que tomamos el concepto de subsecuencia como una sucesión de
+elementos \textbf{seguidos} de la original.
+
+El problema en si consiste en devolver el juego que se desarrolla entre dos jugadores, ambos jugando de manera óptima. Entendiendo 
+como óptima que cada jugador conoce todos los posibles juegos y juega aquel 
+que maximiza la diferencia entre su puntaje y el puntaje del otro jugador.
+
+
+\subsection{Resolución}
+
+La idea básica para resolver este problema es recorrer todas las posibles soluciones. Sabiendo que este problema cumple 
+el principio de optimalidad,
+no consideramos casos en donde la resolución a los subproblemas sea subóptima, puesto que una solución 
+subóptima no puede formar parte de la solución óptima global, por lo demostrado
+en el punto de Correctitud (Principio de Optimalidad).
+
+En el siguiente gráfico mostramos las llamadas recursivas que hace f, es decir, el solapamiento de los casos. 
+\begin{figure}[H]
+    \includegraphics[width=0.8\textwidth]{ej}
+  \label{fig:ejemplo}
+\end{figure}
+Para resolverlo creamos una matriz de (n+1)*(n+1) (siendo n la cantidad de cartas), donde almacenamos los juegos óptimos, para
+cada posible subjuego.
+
+Establecemos como casos base el subjuego vacío y todos los subjuegos con una carta. Luego consideramos subjuegos con una
+carta más que el subjuego anterior, basando la solución en tomar k cartas de alguno de los
+extremos, y jugar de manera óptima el subjuego resultante. En el último paso de este proceso, tenemos almacenada en la
+posición [1,n+1] la solución óptima para el juego de n cartas.
+
+\subsection{Correctitud}
+
+\subsubsection{Lema 1: Principio de optimalidad}
+
+Demostración de que las soluciones de este problema cumplen el principio de optimalidad.\\
+
+Sea Xs una solución óptima de un escenario de n cartas, donde  Xs = [$j_i$ = ($cantidad_i$, $lado_i$)], con k jugadas, entonces obtenemos la 
+descomposición 
+del juego: $j_1$ $j_2$  .. $j_k$. Cuyo resultado es Puntaje(J1)-Puntaje(J2), es decir: \\
+
+Diferencia($1^{er}$ Jugador) = $ \sum_{i=1}^{k}{(-1)}^{i+1}Puntaje(j_{i})$\\
+
+Luego, queremos ver que cada solución esta conformada por subsoluciones óptimas. Tomemos las dos primeras jugadas 
+de Xs y descartémoslas, junto con las cartas que retiro en cada jugada. 
+Llamemos a este nuevo escenario P. Estas corresponden a una jugada del jugador 1 y a una del 2  
+respectivamente, porque lo que volvemos a obtener un juego donde el jugador 1 busca 
+maximizar la diferencia. Sea Ys: $j'_1$ $j'_2$  .. $j'_m$ una solución óptima, para este nuevo problema de 
+$n - cantidad_1 - cantidad_2$ cartas. Queremos ver que:\\
+
+$ \sum_{i=1}^{m}{(-1)}^{i+1}Puntaje(j'_{i})$ == $ \sum_{i=3}^{k}{(-1)}^{i+1}Puntaje(j_{i})$ \\
+
+Es decir, que $Xs - j_1 - j_2$ es una solución óptima para este subproblema P. Asumamos que no lo es: \\
+Si es menor: Entonces la solución dada por $Xs - j_1 - j_2$ es estrictamente mejor. Pero esto no puede ser pues supusimos Ys óptima. \\
+Si es mayor: Entonces puedo crear Xs' = $j_1$ $j_2$ Ys que es una solución estrictamente mejor que Xs para el problema original, lo cual es
+absurdo pues supusimos Xs óptima. \\
+
+Luego $Xs - j_1 - j_2$ es una solución óptima para el subproblema P.\\
+
+Ahora descartemos solo $j_1$. Queremos ver que $Xs - j_1$ nos da la solución a un subproblema T de $ n - cantidad_1$ cartas. 
+Pero debemos tener en cuanta que en este subproblema, el primer 
+jugador en realizar una jugada es 2, por lo tanto, la diferencia entre puntajes debe estar realizada a favor de 2.
+Llamemos Zs: $j''_1$ $j''_2$  .. $j''_q$ a la solución óptima para este problema. Queremos ver que:\\
+
+$ \sum_{i=1}^{m}{(-1)}^{i+1}Puntaje(j''_{i})$ == $ \sum_{i=2}^{k}{(-1)}^{i}Puntaje(j_{i})$ \\
+
+Es decir, que $Xs - j_1$ es una solución óptima para este subproblema T. Nótese que debemos cambiar el signo de los términos pues
+antes debemos calcular Puntaje(J2)-Puntaje(J1).
+Asumamos que no lo es: \\
+Si es menor: Entonces la solución dada por $Xs - j_1$ es estrictamente mejor. Pero esto no puede ser pues supusimos Zs optima. \\
+Si es mayor: Entonces puedo crear Xs' = $j_1$ Zs que es una solución en la que el jugador 2 juega estrictamente mejor que en Xs para 
+el problema original, lo cual es absurdo pues supusimos Xs óptima, y en
+una solución óptima, ambos jugadores deben jugar de manera óptima. \\
+
+Luego $Xs - j_1$ es una solución óptima para el subproblema T.\\
+
+Con esto, hemos demostrado que se cumple el principio de optimalidad.\\
+
+\subsubsection{Función Recursiva}
+
+Definición de la función que devuelve la solución óptima, donde por solución nos referimos solamente a la diferencia de puntajes y no
+al juego en sí,
+pues almacenaremos esta información dentro del programa y no de la función. \\
+
+Sea para $|C| \geq n \geq 0$, C la secuencia de las cartas, $\Rightarrow \\
+f(n, C)= \left\{ \begin{array}{lcc}
+             0 &   si  & n == 0 \\
+             \\C_1 &   si  & n == 1 \\
+             \\ max_{1\leq i \leq n}(SI(i, C) - f(n-i, C_{[i+1..n]}), SD(i,C) - f(n-i, C_{[1..n-i]})) &  c/c &  \
+             \end{array}
+   \right.$\\
+Donde: \\
+$ SI(m, c) =  \sum_{i=1}^{m}C_{i}$ y $ SD(m,c) =  \sum_{j=|C|}^{|C|-m+1}C_{j}$ \\\\  
+Sobre esta función deben tenerse en cuenta varias cosas. La primera, es que el $max_{1\leq i \leq n}$ al que hacemos referencia no esta tomando 
+solo dos parámetros y devolviendo el mayor, sino que para cada incide i crea un par de parámetros, y luego devuelve el máximo entre esos 
+$2n$ parámetros.
+La segunda, es que esta función se indexa desde $1$ cosa que no pasa en C++. Lo hacemos de así pues resulta mas natural y legible en un
+modelo matemático como este, luego el pasaje a índices en C++ es absolutamente trivial (solo implica restar uno a todos los índices). Por ultimo, 
+queremos notar que, si bien $C_{[i+1.. n]}$ puede indefinirse en el caso $i==n$, la función f, que es llamada con el parámetro $n-i$ (que
+vale $0$ en el 
+caso $i==n$), esta bien definida, pues no depende de C.
+
+\subsubsection{Lema 2: Demostración de correctitud de f}
+
+Ahora nos enfocamos en probar la correctitud de f, refiriéndonos al hecho de que f, efectivamente devuelve la solución óptima. Para esto, 
+usaremos inducción en la cantidad de cartas. Sea C el arreglo original de cartas, n el tamaño de C y considerando como hipótesis 
+inductiva: f devuelve la solución óptima para todo juego con menos de n cartas $\Rightarrow$
+
+\paragraph{Caso Base:}
+Consideramos dos posibles casos base, $n==0$ y $n==1$. Esto es porque ambas llamadas pueden suceder en la recursión, pero tienen distintos 
+comportamientos.
+
+Si $n==0$ entonces no hay cartas sobre la mesa, luego, ninguno de los jugadores tiene forma de conseguir un puntaje distinto a cero. Entonces, 
+f devuelve la solución óptima en este caso, en particular, porque solo existe una solución.
+De la misma forma, si $n==1$ significa que solo hay una carta sobre la mesa, por lo que solo hay una solución (tomar dicha carta). Luego la
+solución óptima es la única solución posible, que es $C_1$. Luego, f también devuelve la solución óptima en este caso. 
+
+\paragraph{Paso Inductivo:}
+Como hemos demostrado en 1.1.1 (principio de optimalidad), la solución óptima está compuesta de subsoluciones óptimas, donde llamamos
+subsoluciones
+a las soluciones de los posibles subjuegos. Luego, la solución óptima nunca va a estar formada por 
+agarrar k cartas de algún modo y jugar de manera subóptima el resto del juego. Por lo tanto, ni siquiera nos detendremos a considerar estos 
+casos como posibles soluciones.
+
+Dicho esto, consideramos todas las demás posibilidades, es decir, aquellas que se forman de tomar k cartas de alguna manera y luego jugar de 
+manera óptima. O lo que es lo mismo $ \sum_{i=1}^{k}C_{i} - f(n-i, C_{[i+1..n]})$ tomando cartas desde la izquierda o
+$\sum_{j=|C|}^{|C|-k}C_{j} - f(n-i, CS_{[1..n-i]}) $ tomando cartas desde la derecha.
+
+Sabemos que la solución óptima debe ser una de estas, por lo argumentado anteriormente. Entonces, obtenemos la función óptima 
+como el máximo de todas las posibles soluciones. Es decir:\\
+$max_{1\leq k \leq n}( \sum_{i=1}^{k}C_{i}  - f(n-i, C_{[i+1..n]}), \sum_{j=|C|}^{|C|-k}C_{j} - f(n-i, CS_{[1..n-i]})) $ 
+que es exactamente lo que calcula f $\forall n \geq 2$, pues por HI sabemos que f devuelve la solución óptima para todo 
+juego con menos de n cartas, en particular para $n-i$ con $ 1\leq i\leq n$.
+
+\paragraph{Conclusión:}Luego, f devuelve la solución óptima $\forall n$, entonces f es correcta.
+
+\subsubsection{Lema 3: Demostración de correctitud del código}
+
+Ahora nos enfocamos en probar la correctitud del código P, es decir, que el código efectivamente implementa f. Para esto, 
+usaremos inducción en n, donde n es la cantidad de cartas. Sea C=cartasEnLaMesa el arreglo original de cartas, n=cantCartas el
+tamaño de C y considerando como hipótesis 
+inductiva: P(k) devuelve f(k)  para toda secuencia de k cartas con $0\leq k \leq n$ $\Rightarrow$
+
+\paragraph{Caso Base:}
+Consideramos dos posibles casos base, $n==0$ y $n==1$, porque son los casos bases de f.
+
+Si $n==0$ $\Rightarrow$ f(n, [])=0, luego, cuando n==0 en P no se ejecuta ningún for, y devuelve \\
+$jugadasOptimas[1][cantCartas]== \\
+jugadasOptimas[1][n]==\\ 
+jugadasOptimas[1][0] == 0 $ por la linea\\
+   ($\forall 0\leq i\leq n-1$)jugadasOptimas[i][1] $\leftarrow$ 0.
+   
+   
+De la misma forma, si $n==1$ $\Rightarrow$ f(1,[$C_1$])=$C_1$ tampoco se ejecuta ningún for, y P devuelve \\
+$jugadasOptimas[1][cantCartas]== \\
+jugadasOptimas[1][n]==\\ 
+jugadasOptimas[1][1] == 0 $ por la linea\\
+   ($\forall 0\leq i\leq n-1$)jugadasOptimas[i][1] $\leftarrow$ 0.
+
+\paragraph{Paso Inductivo:}
+Queremos ver que P(n) devuelve f(n,C), sabemos que n$\geq 2$, por lo que P ingresa en los for's $\Rightarrow$ P devuelve\\
+$jugadasOptimas[1][cantCartas]==\\
+jugadasOptimas[1][n]==$\\ 
+(que por linea: jugadasOptimas[comienzoSubjuego][tamañoSubjuego] $\leftarrow$ máximo según puntaje de listaDeJugadas es)\\
+== máximo según puntaje de listaDeJugadas==\\
+$max_{0\leq k \leq n}(\sum_{i=1}^{m}C_{i} - jugadasOptimas[cantCartas-k][k],\sum_{j=|C|}^{|C|-m+1}C_{j} - jugadasOptimas[cantCartas-k][0])==$\\
+(por hipótesis inductiva)  \\
+==$max_{0\leq k \leq n}(\sum_{i=1}^{m}C_{i} - f(n-k, C_{[0,n-k]}),\sum_{j=|C|}^{|C|-m+1}C_{j} - f(n-k, C_{[k,n]}))==$\\
+f(n, C)\\ 
+
+Que es lo que queremos probar.
+\\ \\ \textbf{Pseudocódigo:}\\
+\begin{algoritmo}{Robanumeros}{Lista<Carta> cartasEnLaMesa, Nat cantCartas}[int Puntaje]
+  matriz<puntaje, jugadas> jugadasOptimas[cantCartas+1][cantCartas+1] \;
+  Inicializar JugadasOptimas En Cero \;   
+   ($\forall 0\leq i\leq n-1$)jugadasOptimas[i][0] \asignar 0 \;
+  ($\forall 0\leq i\leq n-1$) jugadasOptimas[i][1] \asignar $C_{i}$ 
+  Lista<puntaje, jugadas> listaDeJugadas \;  
+  \For(){\Forcond{tamañoSubjuego \asignar 2}{cantCartas}}{      
+    \For(){\Forcond{comienzoSubjuego \asignar 0}{cantCartas-tamañoSubjuego}}{      
+      \For(){\Forcond{k \asignar comienzoSubjuego}{tamañoSubjuego+comienzoSubjuego}}{      
+	jugada1 = $\sum_{i=1}^{m}C_{i}$ - jugadasOptimas[cantCartas-k][k] \;
+	jugada2 = $\sum_{j=|C|}^{|C|-m+1}C_{j}$ - jugadasOptimas[cantCartas-k][0] \;	
+	Agregar(listaDeJugadas, jugada1, jugada2) \;	
+      }      
+      jugadasOptimas[comienzoSubjuego][tamañoSubjuego] \asignar máximo según puntaje de listaDeJugadas \;      
+    }    
+    return jugadasOptimas[1][cantCartas]     
+  }
+ \end{algoritmo}
+ 
+ 
+\subsubsection{Conclusión}
+
+Ahora sabemos, por Lema 2, que f es correcta y que, por Lema 3, P implementa f. Luego, P me devuelve la solución óptima. 
+
+\subsection{Complejidad}
+
+A continuación vamos a analizar la complejidad temporal de las funciones relevantes del problema. Como todas estas funciones
+son iterativas, las complejidades finales, que aparecen al final de cada una, son la suma de las complejidades de cada línea, que aparecen al
+costado de las mismas.
+
+
+\begin{algoritmo}{Robanumeros}{\In{cartasEnLaMesa}{List<int>},\In{n}{int}}
+\LinesNumbered
+\nl
+\
+ bool esElTurnoDelJugador1 \asignar true\tcc*{$O$(1)} \
+ bool hayCartasEnLaMesa \asignar true\tcc*{$O$(1)} \
+ int cantTurnos \asignar 0\tcc*{$O$(1)} \
+ int inicioSubsecuenciaDeCartas \asignar 1\tcc*{$O$(1)} \
+ int finSubsecuenciaDeCartas \asignar n\tcc*{$O$(1)} \
+ MatrizOpt matrizJugadasOptimas[n+1][n+1] \asignar vacio\tcc*{$O$($n²$)} \
+ \;
+ \
+ GenerarTodasLasJugadasOptimas(cartasEnLaMesa, matrizJugadasOptimas)\tcc*{$O$($n³$)}\;
+ \
+ \While(\tcc*[f]{$O$($n²$)}){hayCartasEnLaMesa}{
+    
+    \uIf(\tcc*[f]{$O$(1)}){esElTurnoDelJugador1}{
+
+       RealizarJugadaOptimaEntre(inicioSubsecuenciaDeCartas, finSubsecuenciaDeCartas, cartasEnLaMesa, jugador1, matrizJugadasOptimas)\tcc*{$O$($n$)}
+
+       esElTurnoDelJugador1 = false\tcc*{$O$($n²$)}
+      
+       }\Else{
+
+       RealizarJugadaOptimaEntre(inicioSubsecuenciaDeCartas, finSubsecuenciaDeCartas, cartasEnLaMesa, jugador2, matrizJugadasOptimas)\tcc*{$O$($n$)}
+
+       esElTurnoDelJugador1 = true\tcc*{$O$($1$)}
+
+       }
+       
+       cantTurnos++\tcc*{$O$($1$)}
+       
+       hayCartasEnLaMesa = (cartasEnLaMesa.size() != 0)\tcc*{$O$($1$)}
+       
+    }
+    \;
+    return cantTurnos\tcc*{$O$($1$)} \
+    \;
+    Complejidad Total: $O$($n³$ + $n²$) = $O$($n³$)
+
+ 
+\end{algoritmo}
+
+
+
+
+\begin{algoritmo}{RealizarJugadaOptimaEntre}{\Inout{inicioSubsecuenciaDeCartas}{int}, \Inout{finSubsecuenciaDeCartas}{int}, \Inout{cartasEnLaMesa}{list<int>}, \Inout{jugador}{Jugador}, \Inout{matrizJugadasOptimas}{MatrizOpt}}
+\LinesNumbered
+\nl
+\
+ Jugada jugada \asignar ObtenerMejorJugadaEntre(inicioSubsecuenciaDeCartas, finSubsecuenciaDeCartas, matrizJugadasOptimas)\tcc*{$O$($1$)}
+ string extremoDeDondeSaco \asignar jugada.first\tcc*{$O$($1$)} 
+ int cantCartasQueSaco \asignar jugada.second\tcc*{$O$($1$)}
+ \uIf(\tcc*[f]{$O$($1$)}){extremoDeDondeSaco == izq}{
+   inicioSubsecuenciaDeCartas += cantCartasQueSaco\tcc*{$O$($1$)}
+   }\Else{
+   finSubsecuenciaDeCartas -= cantCartasQueSaco\tcc*{$O$($1$)}
+  }
+  jugador.AgregarJugada(jugada)\tcc*{$O$($1$)}
+  ActualizarPuntajeJugador(cartasEnLaMesa, jugador, jugada)\tcc*{$O$($n$)}
+  \;
+  Complejidad Total: $O$($n$)
+
+\end{algoritmo}
+
+
+\begin{algoritmo}{ObtenerMejorJugadaEntre}{\In{inicioSubsecuenciaDeCartas}{int}, \In{finSubsecuenciaDeCartas}{int}, \Inout{matrizJugadasOptimas}{MatrizOpt}}[Jugada]
+\LinesNumbered
+\nl
+  return matrizJugadasOptimas[inicioSubsecuenciaDeCartas][finSubsecuenciaDeCartas].second\tcc*{$O$($1$)}
+  \;
+  Complejidad Total: $O$($1$)
+
+\end{algoritmo}
+
+
+\begin{algoritmo}{ActualizarPuntajeJugador}{\Inout{cartasEnLaMesa}{list<int>}, \Inout{jugador}{Jugador}, \In{jugada}{Jugada}}
+\LinesNumbered
+\nl
+ string extremoDeDondeSaco \asignar jugada.first\tcc*{$O$($1$)}
+ int cantCartasARemover \asignar jugada.second\tcc*{$O$($1$)}
+ int puntos\tcc*{$O$($1$)}
+ \For(\tcc*[f]{$O$($|cartasEnLaMesa|$) = $O$($n$)}){\Forcond{cantCartas \asignar 0}{cantCartasARemover}}{
+ \uIf(\tcc*[f]{$O$($1$)}){extremoDeDondeSaco == izq}{
+  puntos \asignar cartasEnLaMesa.front()\tcc*{$O$($1$)}
+  cartasEnLaMesa.popFront()\tcc*{$O$($1$)}
+ }\Else{
+  puntos \asignar cartasEnLaMesa.back()\tcc*{$O$($1$)}
+  cartasEnLaMesa.popBack()\tcc*{$O$($1$)}
+ }
+ jugador.AgregarPuntos(puntos)\tcc*{$O$($1$)}
+}\;
+
+Complejidad Total: $O$($n$)
+
+
+\end{algoritmo}
+
+
+
+\begin{algoritmo}{GenerarTodasLasJugadasOptimas}{\Inout{listaDeCartas}{list<int>}, \Inout{matrizJugadasOptimas}{MatrizOpt}}
+\LinesNumbered
+\nl
+ int n \asignar listaDeCartas.size()\tcc*{$O$($1$)}
+ vector<int> cartasEnLaMesa[n+1]\tcc*{$O$($n$)}
+ //Paso todas las cartas de una lista a un vector, porque me es mas conveniente para las demas funciones.\;
+ PasarDeListaAVector(cartasEnLaMesa, listaDeCartas)\tcc*{$O$($n$)}
+ //Lleno la diagonal con los casos base\;
+ GenerarCasosBase(cartasEnLaMesa, matrizJugadasOptimas)\tcc*{$O$($n$)} 
+ GenerarElRestoDeLosCasos(cartasEnLaMesa, matrizJugadasOptimas)\tcc*{$O$($n³$)}\;
+ 
+ Complejidad Total: $O$($n³$)
+
+\end{algoritmo}
+
+
+\begin{algoritmo}{GenerarElRestoDeLosCasos}{\Inout{cartasEnLaMesa}{vector<int>}, \Inout{matrizJugadasOptimas}{MatrizOpt}}
+\LinesNumbered
+\nl
+ int n \asignar cartasEnLaMesa.size() - 1\tcc*{$O$($1$)}
+
+  //Lleno la matriz de abajo para arriba, de izquierda a derecha\;
+  \For(\tcc*[f]{$O$($n³$)}){\Forcond{inicioSubsecuenciaDeCartas \asignar n-1}{1}}{
+      \For(\tcc*[f]{$O$($n²$)}){\Forcond{finSubsecuenciaDeCartas \asignar inicioSubsecuenciaDeCartas+1}{n}}{
+        //ObtenerSumaIzquierdaDeLasCartasEntre calcula $\sum_{i=inicioSubsecuenciaDeCartas}^{finSubsecuenciaDeCartas}cartasEnLaMesa_{i}$\;
+        //ObtenerSumaDerechaDeLasCartasEntre calcula $\sum_{j=finSubsecuenciaDeCartas}^{inicioSubsecuenciaDeCartas}cartasEnLaMesa_{j}$\;
+        \;
+         vector<int> sumaParcialIzquierda \asignar ObtenerSumaIzquierdaDeLasCartasEntre(inicioSubsecuenciaDeCartas, finSubsecuenciaDeCartas, cartasEnLaMesa)\tcc*{$O$($n$)} 
+         vector<int> sumaParcialDerecha \asignar ObtenerSumaDerechaDeLasCartasEntre(inicioSubsecuenciaDeCartas, finSubsecuenciaDeCartas, cartasEnLaMesa)\tcc*{$O$($n$)}
+         //JugadaOptima == < beneficio a mi favor, jugada que debo hacer >\;
+         JugadaOptima jugadaOptimaIzq \asignar ObtenerJugadaOptimaDesdeLaIzquierda(sumaParcialIzquierda, inicioSubsecuenciaDeCartas, finSubsecuenciaDeCartas, matrizJugadasOptimas)\tcc*{$O$($n$)} 
+         JugadaOptima jugadaOptimaDer \asignar ObtenerJugadaOptimaDesdeLaDerecha(sumaParcialDerecha, inicioSubsecuenciaDeCartas, finSubsecuenciaDeCartas, matrizJugadasOptimas)\tcc*{$O$($n$)} 
+         JugadaOptima jugadaOptima\tcc*{$O$($1$)}\; 
+         \uIf(\tcc*[f]{$O$($1$)}){jugadaOptimaIzq.first > jugadaOptimaDer.first}{
+            jugadaOptima \asignar jugadaOptimaIzq\tcc*{$O$($1$)} 
+         }\Else{
+            jugadaOptima \asignar jugadaOptimaDer\tcc*{$O$($1$)} 
+         }
+         
+         matrizJugadasOptimas[inicioSubsecuenciaDeCartas][finSubsecuenciaDeCartas] \asignar jugadaOptima\tcc*{$O$($1$)} 
+         
+      }
+
+     }
+     
+     Complejidad Total: $O$($n³$)
+     
+\end{algoritmo}
+
+
+\begin{algoritmo}{ObtenerJugadaOptimaDesdeLaIzquierda}{\Inout{sumaParcialIzquierda}{vector<int>}, \In{inicioSubsecuenciaDeCartas}{int}, \In{finSubsecuenciaDeCartas}{int}, \Inout{matrizJugadasOptimas}{MatrizOpt}}[JugadaOptima]
+\LinesNumbered
+\nl
+int cantCartas \asignar sumaParcialIzquierda.size() - 1\tcc*{$O$($1$)} 
+JugadaOptima jugadaOptima  //< beneficio a mi favor, jugada que debo hacer > \tcc*{$O$($1$)} 
+Jugada jugada //<extremo, cant de cartas>\tcc*{$O$($1$)} 
+jugada.first \asignar izq\tcc*{$O$($1$)}
+int mayorBeneficioAFavor \asignar 0\tcc*{$O$($1$)} 
+bool todaviaNoCalculeNingunBeneficio \asignar true\tcc*{$O$($1$)} \;
+
+  \For(\tcc*[f]{$O$($cantCartas$) = $O$($n$)}){\Forcond{cantCartasAgarradas \asignar 1}{cantCartas}}{
+      int sumaDeLasPrimerasICartas \asignar sumaParcialIzquierda[cantCartasAgarradas]\tcc*{$O$($1$)} 
+      int mayorBeneficioDelOponente\tcc*{$O$($1$)} 
+     
+     \uIf(\tcc*[f]{$O$($1$)}){cantCartasAgarradas < cantCartas}{
+	//El beneficio del oponente es lo mejor que se puede sacar de la subsecuencia de cartas restante.\;
+	mayorBeneficioDelOponente \asignar matrizJugadasOptimas[inicioSubsecuenciaDeCartas+cantCartasAgarradas][finSubsecuenciaDeCartas].first\tcc*{$O$($1$)}
+	}\Else{
+	//Si agarre todas las cartas, el beneficio del oponente obviamente es 0.\;
+	mayorBeneficioDelOponente \asignar 0\tcc*{$O$($1$)}
+	}
+	
+	\If(\tcc*[f]{$O$($1$)}){todaviaNoCalculeNingunBeneficio}{
+	    //Como todavia no tengo ningun beneficio a favor, agarro el primero que calculo y lo tomo como maximo\;
+	    mayorBeneficioAFavor \asignar sumaDeLasPrimerasICartas - mayorBeneficioDelOponente\tcc*{$O$($1$)}
+	    todaviaNoCalculeNingunBeneficio \asignar false\tcc*{$O$($1$)}
+	}
+        
+        \If(\tcc*[f]{$O$($1$)}){mayorBeneficioAFavor <= sumaDeLasPrimerasICartas - mayorBeneficioDelOponente}{
+	    //Actualizo cual seria mi mejor jugada\;
+	    mayorBeneficioAFavor \asignar sumaDeLasPrimerasICartas - mayorBeneficioDelOponente\tcc*{$O$($1$)}
+	    jugada.second \asignar cantCartasAgarradas\tcc*{$O$($1$)}
+	    jugadaOptima.first \asignar mayorBeneficioAFavor\tcc*{$O$($1$)}
+	    jugadaOptima.second \asignar jugada\tcc*{$O$($1$)}
+	    
+	 }
+
+   }
+
+  return jugadaOptima\tcc*{$O$($1$)}\;
+  
+  Complejidad Total: $O$($n$)
+
+
+\end{algoritmo}
+
+
+ObtenerJugadaOptimaDesdeLaDerecha es igual a la anterior, con la diferencia de que la línea 9 se reemplaza por:
+\newline
+int sumaDeLasPrimerasICartas = sumaParcialDerecha[cantCartasAgarradas]
+\newline
+y la linea 13 es reemplazada por: 
+\newline
+mayorBeneficioDelOponente = matrizJugadasOptimas[inicioSubsecuenciaDeCartas][finSubsecuenciaDeCartas-cantCartasAgarradas].first
+
+ 
+
+
+\subsection{Testing}
+Los casos bordes que consideramos en este ejercicio son los que tienen una sola carta, todas las cartas positivas,
+y todas negativas. Para ello, usamos las siguientes entradas.
+\begin{center}
+  \begin{tabular}{| l | c | r | c | r | c | r | c | r | }
+    \hline
+     Cantidad de cartas & Cartas & Turnos & Puntajes J1 J2 & Jugadas \\ \hline
+     1 & [1] & 1 & J1=1 J2=0 & izq 1 \\ \hline
+     4 & [3,2,25,62] & 1 & J1=92 J2=0 & der 4 \\ \hline
+     4 & [-1,-1,-1,-500] & 2 & J1=-3 J2=-500 & izq 3 izq 1 \\ 
+     \hline
+   \end{tabular}
+ \end{center}
+ Nótese que en el caso en el cual todas las cartas son negativas la solución no es trivial ni única. Pero aun así lo consideramos como un 
+ caso borde
+ pues el algoritmo podría, si estuviese mal implementado, maximizar la ganancia sin tener en cuenta futuras pérdidas si bien no es el caso.
+\paragraph{Nota}
+La validez de estos resultados se comprobó a mano, mas no se adjuntan las cuentas pues creemos que no aportan mucho más que espacio
+malgastado. (Salvemos un árbol! Ahorremos papel!)
+
+
+\subsection{Experimentación}
+
+\subsubsection{Generación de Tests Aleatorios}
+
+Para generar los tests aleatorios, utilizamos el siguiente código:
+
+\begin{verbatim}
+ 
+ 
+    int main() {
+
+        srand(time(NULL));
+        ofstream tests;
+        tests.open("tests_aleatorios");
+        int MAX_CARTAS = 1000;
+
+        for (int maximoDeCartas = 1; maximoDeCartas <= MAX_CARTAS; maximoDeCartas+=25) {
+
+        tests << maximoDeCartas << " ";
+
+        for (int cantCartas = 1; cantCartas <= maximoDeCartas; cantCartas++) {
+
+            int nroRandom = 2*(rand() % maximoDeCartas + 1);
+            int carta = nroRandom - maximoDeCartas;
+            tests << carta << " ";
+            
+            }
+            
+            tests << endl;
+            
+        }
+        
+        tests << 0;
+        tests.close();
+
+    }
+
+\end{verbatim}
+
+
+Utilizamos la hora del reloj de la computadora al momento de la ejecución como semilla para la función rand(). Por conveniencia, 
+los números de las cartas
+se mueven entre -n y n, es decir, tanto el mínimo como el máximo número están en O(n), siendo n la cantidad de cartas sobre la mesa.
+
+
+\subsubsection{Gráficos}
+
+A la hora de graficar, decidimos comparar un caso ``general'', es decir, con tanto números positivos como negativos generados aleatoriamente, contra casos borde como por ejemplo todos números positivos, y todos
+números negativos. A continuación se pueden observar los resultados:
+
+\includegraphics[width=0.8\textwidth]{ej1/graficos.pdf}
+
+\subsubsection{Conclusiones}
+
+Lo que pudimos observar empíricamente fue que, a diferencia de lo que intuitivamente pensamos, los casos donde todas las cartas son positivas son los casos que más tiempo toman, mientras que los casos donde todas las
+cartas son negativas, son los que menos tiempo toman.
+En el segundo gráfico también pudimos corroborar empíricamente que los tiempos de ejecución crecen como una función cúbica del tamaño de la entrada, ya que al dividir los tiempos de ejecución por $n³$, los mismos tienden a 
+un número constante.
